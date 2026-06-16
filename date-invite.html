@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>you've been summoned</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #FAF8F4; --ink: #1A1917; --muted: #7A7772;
+    --border: rgba(26,25,23,0.1); --teal: #1D9E75;
+    --teal-light: #E1F5EE; --teal-dark: #085041; --teal-border: #9FE1CB;
+  }
+  html, body { min-height: 100vh; background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+  body { display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+  .wrap { width: 100%; max-width: 420px; }
+
+  .progress-bar { display: flex; gap: 6px; margin-bottom: 2rem; }
+  .progress-step { flex: 1; height: 3px; border-radius: 99px; background: var(--border); transition: background 0.4s; }
+  .progress-step.done { background: var(--teal); }
+  .progress-step.active { background: var(--teal); opacity: 0.4; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+  .eyebrow-line { flex: 1; height: 0.5px; background: var(--border); }
+  .eyebrow-text { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+
+  .headline { font-family: 'Playfair Display', serif; font-size: clamp(30px,8vw,40px); font-weight: 700; line-height: 1.15; margin-bottom: 0.75rem; }
+  .headline em { font-style: italic; font-weight: 500; color: var(--teal); }
+  .sub { font-size: 15px; font-weight: 300; color: var(--muted); line-height: 1.7; margin-bottom: 2rem; }
+  .section-divider { height: 0.5px; background: var(--border); margin-bottom: 2rem; }
+  .question { font-family: 'Playfair Display', serif; font-style: italic; font-size: 17px; color: var(--muted); margin-bottom: 1.25rem; line-height: 1.5; }
+
+  .detail-row { display: flex; gap: 8px; margin-bottom: 2rem; flex-wrap: wrap; }
+  .detail-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 99px; border: 0.5px solid var(--border); font-size: 13px; color: var(--ink); background: #fff; }
+
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+  .option { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 0.5px solid var(--border); background: #fff; cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s, transform 0.1s; width: 100%; font-family: inherit; }
+  .option:hover { border-color: rgba(26,25,23,0.25); transform: translateY(-1px); }
+  .option.selected { border: 1.5px solid var(--teal-border); background: var(--teal-light); }
+  .option-glyph { font-size: 22px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+  .option-label { font-size: 14px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 3px; }
+  .option.selected .option-label { color: var(--teal-dark); }
+  .option-desc { font-size: 12px; font-weight: 300; color: var(--muted); line-height: 1.5; display: block; }
+  .option.selected .option-desc { color: #0F6E56; }
+
+  /* place grid */
+  .place-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .place-chip { padding: 12px 14px; border-radius: 12px; border: 0.5px solid var(--border); background: #fff; cursor: pointer; font-family: inherit; transition: all 0.12s; text-align: left; width: 100%; }
+  .place-chip:hover { border-color: var(--teal-border); }
+  .place-chip.on { background: var(--teal-light); border: 1.5px solid var(--teal-border); }
+  .place-chip .p-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  .place-chip .p-name { font-size: 13px; font-weight: 500; color: var(--ink); display: block; }
+  .place-chip.on .p-name { color: var(--teal-dark); }
+  .place-chip .p-note { font-size: 11px; color: var(--muted); display: block; margin-top: 2px; }
+  .place-chip.on .p-note { color: #0F6E56; }
+
+  /* fill blocks */
+  .fill-block { background: #fff; border: 0.5px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 12px; }
+  .fill-label { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: block; }
+  .fill-note { font-size: 12px; color: var(--muted); font-weight: 300; margin-bottom: 10px; display: block; line-height: 1.5; }
+
+  .input-full { width: 100%; border: none; border-bottom: 1.5px solid var(--teal); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink); padding: 6px 4px; outline: none; transition: border-color 0.15s; }
+  .input-full:focus { border-color: var(--ink); }
+  .input-full::placeholder { color: var(--teal-border); }
+
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { padding: 6px 14px; border-radius: 99px; border: 0.5px solid var(--border); background: #fff; font-size: 13px; color: var(--muted); cursor: pointer; font-family: inherit; transition: all 0.12s; }
+  .chip:hover { border-color: var(--teal-border); color: var(--teal-dark); }
+  .chip.on { background: var(--teal-light); border-color: var(--teal-border); color: var(--teal-dark); font-weight: 500; }
+
+  .cta { width: 100%; padding: 15px; border-radius: 14px; border: none; background: var(--ink); color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 4px; }
+  .cta:hover { opacity: 0.85; transform: translateY(-1px); }
+  .cta.disabled { opacity: 0.3; pointer-events: none; }
+  .footer-note { text-align: center; font-size: 12px; font-weight: 300; color: var(--muted); margin-top: 1.25rem; font-style: italic; }
+
+  /* final */
+  .final-center { text-align: center; padding: 0.5rem 0; }
+  .big-glyph { font-size: 52px; display: block; margin-bottom: 1.25rem; }
+  .final-headline { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; line-height: 1.3; margin-bottom: 0.75rem; }
+  .final-sub { font-size: 14px; font-weight: 300; color: var(--muted); line-height: 1.7; margin-bottom: 1.5rem; }
+
+  .summary-card { background: #fff; border: 0.5px solid var(--border); border-radius: 14px; padding: 18px 20px; text-align: left; margin-bottom: 1.25rem; }
+  .summary-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); min-width: 60px; margin-top: 1px; flex-shrink: 0; }
+  .summary-val { color: var(--ink); word-break: break-all; }
+
+  .cal-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; border-radius: 14px; background: var(--ink); color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: opacity 0.15s, transform 0.1s; text-decoration: none; }
+  .cal-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--muted); cursor: pointer; padding: 0; margin-bottom: 1.75rem; transition: color 0.12s; }
+  .back-btn:hover { color: var(--ink); }
+
+  /* sent state */
+  .sent-screen { display: none; text-align: center; padding: 2rem 0; }
+  .sent-screen.show { display: block; }
+  .sent-glyph { font-size: 52px; display: block; margin-bottom: 1rem; }
+  .sent-headline { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; margin-bottom: 0.5rem; }
+  .sent-sub { font-size: 14px; font-weight: 300; color: var(--muted); line-height: 1.7; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="progress-bar">
+    <div class="progress-step active" id="p1"></div>
+    <div class="progress-step" id="p2"></div>
+    <div class="progress-step" id="p3"></div>
+  </div>
+
+  <!-- SCREEN 1: vibe + place -->
+  <div class="screen active" id="s1">
+    <div class="eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">you've been summoned</span>
+      <div class="eyebrow-line"></div>
+    </div>
+
+    <h1 class="headline">A modest proposal<br>for a <em>pretty good</em><br>Thursday.</h1>
+    <p class="sub">No formal attire required.<br>Good vibes, however, are mandatory.</p>
+
+    <div class="detail-row">
+      <span class="detail-pill">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Thursday
+      </span>
+      <span class="detail-pill">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        From 5pm
+      </span>
+      <span class="detail-pill">📍 Metrotown</span>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <p class="question">What are we doing?</p>
+    <div class="options" id="vibeOpts">
+      <button class="option" onclick="pickVibe(this,'coffee')">
+        <span class="option-glyph">☕</span>
+        <span>
+          <span class="option-label">Coffee</span>
+          <span class="option-desc">Low key, good conversation, no agenda.</span>
+        </span>
+      </button>
+      <button class="option" onclick="pickVibe(this,'dinner')">
+        <span class="option-glyph">🍽️</span>
+        <span>
+          <span class="option-label">Dinner</span>
+          <span class="option-desc">Proper sit-down, food, maybe linger a while.</span>
+        </span>
+      </button>
+      <button class="option" onclick="pickVibe(this,'her')">
+        <span class="option-glyph">🎲</span>
+        <span>
+          <span class="option-label">Your call</span>
+          <span class="option-desc">You pick the spot. I trust you.</span>
+        </span>
+      </button>
+    </div>
+
+    <!-- place picker: shown after vibe is picked -->
+    <div id="placeSection" style="display:none;">
+      <p class="question" style="margin-bottom:1rem;" id="placeQ">Where at Metrotown?</p>
+      <div class="place-grid" id="placeGrid">
+        <!-- injected by JS -->
+      </div>
+    </div>
+
+    <button class="cta disabled" id="cta1" style="margin-top:1.5rem" onclick="goTo(2)">Next →</button>
+    <p class="footer-note">either way, the answer should be yes</p>
+  </div>
+
+  <!-- SCREEN 2: her email -->
+  <div class="screen" id="s2">
+    <button class="back-btn" onclick="goTo(1)">← Back</button>
+    <div class="eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">almost locked in</span>
+      <div class="eyebrow-line"></div>
+    </div>
+
+    <h2 class="headline" style="font-size:clamp(24px,6vw,32px); margin-bottom:0.5rem">One last<br><em>thing.</em></h2>
+    <p class="sub" style="margin-bottom:1.5rem">Drop your email and I'll send a calendar invite straight to you.</p>
+
+    <div class="fill-block">
+      <span class="fill-label">Your name</span>
+      <input class="input-full" id="f-name" placeholder="first name is fine" oninput="checkS2()">
+    </div>
+
+    <div class="fill-block">
+      <span class="fill-label">Your email</span>
+      <span class="fill-note">You'll get a Google Calendar invite from Adrian. No spam, promise.</span>
+      <input class="input-full" id="f-email" type="email" placeholder="you@email.com" oninput="checkS2()">
+    </div>
+
+    <div class="fill-block">
+      <span class="fill-label">Preferred time</span>
+      <div class="chip-row" id="timeChips" style="margin-top:4px;">
+        <button class="chip" onclick="toggleChip(this,'5pm','timeChips')">5pm</button>
+        <button class="chip" onclick="toggleChip(this,'6pm','timeChips')">6pm</button>
+        <button class="chip" onclick="toggleChip(this,'7pm','timeChips')">7pm</button>
+        <button class="chip" onclick="toggleChip(this,'flexible','timeChips')">flexible</button>
+      </div>
+    </div>
+
+    <button class="cta disabled" id="cta2" onclick="goTo(3)">Confirm →</button>
+    <p class="footer-note">calendar invite incoming 📅</p>
+  </div>
+
+  <!-- SCREEN 3: confirmed -->
+  <div class="screen" id="s3">
+    <button class="back-btn" onclick="goTo(2)">← Back</button>
+    <div class="final-center">
+      <span class="big-glyph" id="finalGlyph">☕</span>
+      <h2 class="final-headline" id="finalTitle">We're doing this.</h2>
+      <p class="final-sub">Here's what's booked. Adrian will send a Google Calendar invite to your email.</p>
+
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="summary-key">Name</span>
+          <span class="summary-val" id="sv-name">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Vibe</span>
+          <span class="summary-val" id="sv-vibe">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Spot</span>
+          <span class="summary-val" id="sv-place">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">When</span>
+          <span class="summary-val" id="sv-time">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-key">Email</span>
+          <span class="summary-val" id="sv-email">—</span>
+        </div>
+      </div>
+
+      <!-- opens Gmail compose with pre-filled calendar invite info for Adrian -->
+      <a id="calLink" class="cal-btn" href="#" target="_blank" rel="noopener">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Send calendar invite
+      </a>
+
+      <p class="footer-note" style="margin-top:1.25rem">looking forward to it 🙂</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let vibe = null;
+  let selectedPlace = null;
+  let selectedTime = null;
+
+  const places = {
+    coffee: [
+      { icon:'☕', name:'Blenz Coffee', note:'Inside Metrotown' },
+      { icon:'🫖', name:'Chatime', note:'Bubble tea, Crystal Mall' },
+      { icon:'🌿', name:'Starbucks Reserve', note:'Ground floor, Metrotown' },
+      { icon:'💛', name:'Your pick', note:'Suggest somewhere' },
+    ],
+    dinner: [
+      { icon:'🍜', name:'Ramen Danbo', note:'Crystal Mall' },
+      { icon:'🥩', name:'Earls Kitchen', note:'Metrotown' },
+      { icon:'🍣', name:'Miku Express', note:'Crystal Mall' },
+      { icon:'💛', name:'Your pick', note:'Suggest somewhere' },
+    ],
+    her: [
+      { icon:'💛', name:'Totally up to you', note:'Anywhere in Metrotown' },
+    ]
+  };
+
+  const vibeLabels = { coffee: '☕ Coffee', dinner: '🍽️ Dinner', her: '🎲 Your call' };
+
+  function pickVibe(btn, id) {
+    document.querySelectorAll('#vibeOpts .option').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    vibe = id;
+    selectedPlace = null;
+    renderPlaces(id);
+    document.getElementById('placeSection').style.display = id === 'her' ? 'none' : 'block';
+    if (id === 'her') { selectedPlace = 'Your choice'; }
+    checkS1();
+  }
+
+  function renderPlaces(id) {
+    const grid = document.getElementById('placeGrid');
+    grid.innerHTML = '';
+    (places[id] || []).forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'place-chip';
+      btn.innerHTML = `<span class="p-icon">${p.icon}</span><span class="p-name">${p.name}</span><span class="p-note">${p.note}</span>`;
+      btn.onclick = () => {
+        document.querySelectorAll('#placeGrid .place-chip').forEach(c => c.classList.remove('on'));
+        btn.classList.add('on');
+        selectedPlace = p.name === 'Your pick' || p.name === 'Totally up to you' ? 'TBD (her pick)' : p.name;
+        checkS1();
+      };
+      grid.appendChild(btn);
+    });
+  }
+
+  function checkS1() {
+    const ok = vibe && selectedPlace;
+    document.getElementById('cta1').classList.toggle('disabled', !ok);
+  }
+
+  function toggleChip(btn, id, groupId) {
+    const chips = document.querySelectorAll('#' + groupId + ' .chip');
+    const wasOn = btn.classList.contains('on');
+    chips.forEach(c => c.classList.remove('on'));
+    if (!wasOn) { btn.classList.add('on'); selectedTime = id; }
+    else { selectedTime = null; }
+    checkS2();
+  }
+
+  function checkS2() {
+    const name = document.getElementById('f-name').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    const ok = name.length > 0 && email.includes('@') && selectedTime;
+    document.getElementById('cta2').classList.toggle('disabled', !ok);
+  }
+
+  function buildFinal() {
+    const name = document.getElementById('f-name').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    const glyphs = { coffee:'☕', dinner:'🍽️', her:'🎲' };
+
+    document.getElementById('finalGlyph').textContent = glyphs[vibe] || '☕';
+    document.getElementById('finalTitle').textContent = name ? `See you Thursday, ${name}.` : "We're doing this.";
+    document.getElementById('sv-name').textContent = name;
+    document.getElementById('sv-vibe').textContent = vibeLabels[vibe] || '—';
+    document.getElementById('sv-place').textContent = selectedPlace || '—';
+    document.getElementById('sv-time').textContent = `Thursday, ${selectedTime} · Metrotown`;
+    document.getElementById('sv-email').textContent = email;
+
+    // Build a mailto link that pre-fills a calendar-style email for Adrian to send
+    const subject = encodeURIComponent(`Date confirmed — Thursday ${selectedTime} @ ${selectedPlace}`);
+    const body = encodeURIComponent(
+      `Hi ${name},\n\nJust confirming our plans!\n\n📅 Thursday, ${selectedTime}\n📍 ${selectedPlace}, Metrotown\n🎯 ${vibeLabels[vibe]}\n\nSee you there 🙂\n\n— Adrian\n\n(Send her a proper Google Calendar invite from calendar.google.com using this info)`
+    );
+    document.getElementById('calLink').href = `mailto:${email}?subject=${subject}&body=${body}`;
+  }
+
+  function goTo(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('s' + n).classList.add('active');
+    for (let i = 1; i <= 3; i++) {
+      const step = document.getElementById('p' + i);
+      step.classList.remove('done','active');
+      if (i < n) step.classList.add('done');
+      else if (i === n) step.classList.add('active');
+    }
+    if (n === 3) buildFinal();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
