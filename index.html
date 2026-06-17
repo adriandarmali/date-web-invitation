@@ -171,6 +171,7 @@
       <div class="place-grid" id="placeGrid">
         <!-- injected by JS -->
       </div>
+      <input class="input-full" id="f-place-custom" placeholder="type a place..." style="display:none; margin-top:10px;" oninput="customPlaceInput()">
     </div>
 
     <button class="cta disabled" id="cta1" style="margin-top:1.5rem" onclick="goTo(2)">Next →</button>
@@ -264,16 +265,16 @@
 
   const places = {
     coffee: [
-      { icon:'☕', name:'Blenz Coffee', note:'Inside Metrotown' },
-      { icon:'🫖', name:'Chatime', note:'Bubble tea, Crystal Mall' },
-      { icon:'🌿', name:'Starbucks Reserve', note:'Ground floor, Metrotown' },
-      { icon:'💛', name:'Your pick', note:'Suggest somewhere' },
+      { icon:'🧋', name:'Tealips Cafe', note:'Near Metrotown' },
+      { icon:'🌿', name:'La Forêt', note:'Inside Metrotown' },
+      { icon:'📚', name:'Good Earth Coffeehouse', note:'Inside Indigo, Metrotown' },
+      { icon:'💛', name:'Your pick', note:'Type your own below', custom:true },
     ],
     dinner: [
-      { icon:'🍜', name:'Ramen Danbo', note:'Crystal Mall' },
-      { icon:'🥩', name:'Earls Kitchen', note:'Metrotown' },
-      { icon:'🍣', name:'Miku Express', note:'Crystal Mall' },
-      { icon:'💛', name:'Your pick', note:'Suggest somewhere' },
+      { icon:'🍜', name:'Kokoro Tokyo Mazesoba', note:'Metrotown' },
+      { icon:'🍤', name:'Tendon Kohaku', note:'Metrotown' },
+      { icon:'🍥', name:'ZUBU Ramen', note:'Metropolis at Metrotown' },
+      { icon:'💛', name:'Your pick', note:'Type your own below', custom:true },
     ],
     her: [
       { icon:'💛', name:'Totally up to you', note:'Anywhere in Metrotown' },
@@ -295,7 +296,10 @@
 
   function renderPlaces(id) {
     const grid = document.getElementById('placeGrid');
+    const customInput = document.getElementById('f-place-custom');
     grid.innerHTML = '';
+    customInput.style.display = 'none';
+    customInput.value = '';
     (places[id] || []).forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'place-chip';
@@ -303,11 +307,24 @@
       btn.onclick = () => {
         document.querySelectorAll('#placeGrid .place-chip').forEach(c => c.classList.remove('on'));
         btn.classList.add('on');
-        selectedPlace = p.name === 'Your pick' || p.name === 'Totally up to you' ? 'TBD (her pick)' : p.name;
+        if (p.custom) {
+          customInput.style.display = 'block';
+          customInput.focus();
+          selectedPlace = customInput.value.trim() || null;
+        } else {
+          customInput.style.display = 'none';
+          selectedPlace = p.name === 'Totally up to you' ? 'TBD (her pick)' : p.name;
+        }
         checkS1();
       };
       grid.appendChild(btn);
     });
+  }
+
+  function customPlaceInput() {
+    const val = document.getElementById('f-place-custom').value.trim();
+    selectedPlace = val.length > 0 ? val : null;
+    checkS1();
   }
 
   function checkS1() {
