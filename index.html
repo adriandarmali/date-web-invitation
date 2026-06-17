@@ -211,8 +211,8 @@
       </div>
     </div>
 
-    <button class="cta disabled" id="cta2" onclick="goTo(3)">Confirm →</button>
-    <p class="footer-note">calendar invite incoming 📅</p>
+    <button class="cta disabled" id="cta2" onclick="submitForm()">Confirm →</button>
+    <p class="footer-note" id="s2FooterNote">calendar invite incoming 📅</p>
   </div>
 
   <!-- SCREEN 3: confirmed -->
@@ -246,11 +246,8 @@
         </div>
       </div>
 
-      <!-- opens Gmail compose with pre-filled calendar invite info for Adrian -->
-      <a id="calLink" class="cal-btn" href="#" target="_blank" rel="noopener">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Send calendar invite
-      </a>
+      <!-- Formspree submission already sent automatically on confirm -->
+      <p class="footer-note" style="margin-top:0.5rem; font-style: normal;">A confirmation has been sent. Adrian will follow up with the calendar invite.</p>
 
       <p class="footer-note" style="margin-top:1.25rem">looking forward to it 🙂</p>
     </div>
@@ -360,13 +357,44 @@
     document.getElementById('sv-place').textContent = selectedPlace || '—';
     document.getElementById('sv-time').textContent = `Thursday, ${selectedTime} · Metrotown`;
     document.getElementById('sv-email').textContent = email;
+  }
 
-    // Build a mailto link that pre-fills a calendar-style email for Adrian to send
-    const subject = encodeURIComponent(`Date confirmed — Thursday ${selectedTime} @ ${selectedPlace}`);
-    const body = encodeURIComponent(
-      `Hi ${name},\n\nJust confirming our plans!\n\n📅 Thursday, ${selectedTime}\n📍 ${selectedPlace}, Metrotown\n🎯 ${vibeLabels[vibe]}\n\nSee you there 🙂\n\n— Adrian\n\n(Send her a proper Google Calendar invite from calendar.google.com using this info)`
-    );
-    document.getElementById('calLink').href = `mailto:${email}?subject=${subject}&body=${body}`;
+  function submitForm() {
+    const name = document.getElementById('f-name').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    const btn = document.getElementById('cta2');
+    const note = document.getElementById('s2FooterNote');
+
+    if (!name || !email.includes('@') || !selectedTime) return;
+
+    btn.textContent = 'Sending...';
+    btn.classList.add('disabled');
+
+    const payload = {
+      name: name,
+      email: email,
+      vibe: vibeLabels[vibe] || vibe,
+      place: selectedPlace || '—',
+      time: selectedTime,
+      day: 'Thursday'
+    };
+
+    fetch('https://formspree.io/f/xrevdwjv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => {
+      btn.textContent = 'Confirm →';
+      btn.classList.remove('disabled');
+      buildFinal();
+      goTo(3);
+    })
+    .catch(err => {
+      btn.textContent = 'Confirm →';
+      btn.classList.remove('disabled');
+      note.textContent = 'Something went wrong, try again?';
+    });
   }
 
   function goTo(n) {
@@ -378,7 +406,6 @@
       if (i < n) step.classList.add('done');
       else if (i === n) step.classList.add('active');
     }
-    if (n === 3) buildFinal();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 </script>
